@@ -1,10 +1,148 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>DevOps Project</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevOps Project | Dynamic Web Hosting</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Dynamic Web Hosting Using AWS DevOps</h1>
-  <h2>Successfully Deployed!</h2>
+  <header class="site-header">
+    <a class="brand" href="#home" aria-label="Dynamic host home">
+      <span class="brand-mark">D</span>
+      <span>DynamicHost</span>
+    </a>
+
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="#stack">Stack</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#metrics">Metrics</a>
+    </nav>
+
+    <button class="theme-toggle" type="button" aria-label="Toggle dark mode">
+      <span class="toggle-icon">Light</span>
+    </button>
+  </header>
+
+  <main id="home">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">AWS DevOps Deployment</p>
+        <h1>Dynamic Web Hosting That Feels Fast, Stable, and Production Ready.</h1>
+        <p class="hero-text">
+          A responsive interactive project page for your cloud hosting workflow,
+          deployment pipeline, and live infrastructure story.
+        </p>
+
+        <div class="hero-actions">
+          <a class="primary-button" href="#pipeline">Explore Pipeline</a>
+          <button class="secondary-button" id="deployButton" type="button">Run Demo Deploy</button>
+        </div>
+      </div>
+
+      <div class="hero-panel" aria-label="Deployment status panel">
+        <div class="terminal-bar">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="status-row">
+          <span class="status-dot"></span>
+          <span id="deployStatus">Successfully Deployed</span>
+        </div>
+        <div class="terminal-output" id="terminalOutput">
+          <p>$ docker build -t dynamic-web-hosting .</p>
+          <p>$ jenkins deploy --env production</p>
+          <p>$ aws sync app/ s3://hosting-bucket</p>
+          <p class="success">Deployment completed with zero downtime.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="metrics" id="metrics" aria-label="Project metrics">
+      <article class="metric-card">
+        <span class="metric-value" data-target="99">0</span>
+        <span class="metric-suffix">%</span>
+        <p>Uptime Target</p>
+      </article>
+      <article class="metric-card">
+        <span class="metric-value" data-target="6">0</span>
+        <span class="metric-suffix">s</span>
+        <p>Demo Deploy Time</p>
+      </article>
+      <article class="metric-card">
+        <span class="metric-value" data-target="24">0</span>
+        <span class="metric-suffix">/7</span>
+        <p>Monitoring Ready</p>
+      </article>
+    </section>
+
+    <section class="content-band" id="stack">
+      <div>
+        <p class="eyebrow">Cloud Stack</p>
+        <h2>Built Around a Practical Hosting Flow</h2>
+      </div>
+
+      <div class="stack-grid">
+        <button class="stack-card active" type="button" data-stack="AWS S3 stores and serves the static site assets.">
+          <span>01</span>
+          <strong>AWS Hosting</strong>
+          <p>Static app delivery with cloud-first deployment.</p>
+        </button>
+        <button class="stack-card" type="button" data-stack="Jenkins automates build, test, and deployment steps.">
+          <span>02</span>
+          <strong>Jenkins CI/CD</strong>
+          <p>Repeatable pipeline steps for reliable releases.</p>
+        </button>
+        <button class="stack-card" type="button" data-stack="Docker keeps the project easy to package and run anywhere.">
+          <span>03</span>
+          <strong>Docker</strong>
+          <p>Portable runtime setup for clean delivery.</p>
+        </button>
+      </div>
+
+      <p class="stack-note" id="stackNote">AWS S3 stores and serves the static site assets.</p>
+    </section>
+
+    <section class="pipeline" id="pipeline">
+      <div class="section-heading">
+        <p class="eyebrow">Release Pipeline</p>
+        <h2>From Code Change to Live Website</h2>
+      </div>
+
+      <div class="timeline">
+        <article class="timeline-step">
+          <span>1</span>
+          <h3>Code</h3>
+          <p>Update the web page and push changes to the repository.</p>
+        </article>
+        <article class="timeline-step">
+          <span>2</span>
+          <h3>Build</h3>
+          <p>Docker prepares a clean environment for the app.</p>
+        </article>
+        <article class="timeline-step">
+          <span>3</span>
+          <h3>Deploy</h3>
+          <p>Jenkins sends the latest version to the hosting target.</p>
+        </article>
+        <article class="timeline-step">
+          <span>4</span>
+          <h3>Monitor</h3>
+          <p>Prometheus-style monitoring keeps the service visible.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Dynamic Web Hosting Using AWS DevOps</p>
+    <a href="#home">Back to top</a>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>

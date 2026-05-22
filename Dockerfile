@@ -1,14 +1,13 @@
-# Use official lightweight Nginx image
-FROM nginx:latest
+FROM nginx:1.27-alpine
 
-# Remove default nginx website files
 RUN rm -rf /usr/share/nginx/html/*
 
-# Copy website files into nginx folder
-COPY . /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY app/ /usr/share/nginx/html/
 
-# Expose container port
 EXPOSE 80
 
-# Start nginx server
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget -qO- http://127.0.0.1/ >/dev/null || exit 1
+
 CMD ["nginx", "-g", "daemon off;"]

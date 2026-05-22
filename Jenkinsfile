@@ -8,18 +8,19 @@ pipeline {
 
     parameters {
         string(name: 'DOCKER_IMAGE', defaultValue: 'your-dockerhub-username/dynamic-site', description: 'Docker Hub image name')
-        string(name: 'AWS_REGION', defaultValue: 'ap-south-1', description: 'AWS region for Terraform')
-        string(name: 'YOUR_IP_CIDR', defaultValue: '0.0.0.0/0', description: 'Your public IP in CIDR format, for example 49.36.55.12/32')
-        booleanParam(name: 'APPLY_TERRAFORM', defaultValue: false, description: 'Force Terraform apply even if terraform files did not change')
+        string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS region for Terraform')
+        string(name: 'YOUR_IP_CIDR', defaultValue: '0.0.0.0/0', description: 'Your public IP in CIDR, e.g. 49.36.55.12/32')
+        booleanParam(name: 'APPLY_TERRAFORM', defaultValue: false, description: 'Force Terraform apply')
     }
 
     environment {
         CONTAINER_NAME = 'dynamic-site'
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        IMAGE_TAG      = "${env.BUILD_NUMBER}"
         TF_IN_AUTOMATION = 'true'
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -29,23 +30,27 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    env.FULL_IMAGE = "${params.DOCKER_IMAGE}:${env.IMAGE_TAG}"
+                    env.FULL_IMAGE   = "${params.DOCKER_IMAGE}:${env.IMAGE_TAG}"
                     env.LATEST_IMAGE = "${params.DOCKER_IMAGE}:latest"
                 }
-                sh '''
-                    docker build -t "$FULL_IMAGE" -t "$LATEST_IMAGE" .
-                '''
+                bat """
+                    docker build -t %FULL_IMAGE% -t %LATEST_IMAGE% .
+                """
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push "$FULL_IMAGE"
-                        docker push "$LATEST_IMAGE"
-                    '''
+                withCredentials([usernamePassword(
+                    credentialsId: 'DOCKERHUB_CREDENTIALS',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    bat """
+                        echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                        docker push %FULL_IMAGE%
+                        docker push %LATEST_IMAGE%
+                    """
                 }
             }
         }
@@ -60,18 +65,23 @@ pipeline {
             }
             steps {
                 withCredentials([
-                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID',    variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     dir('terraform') {
-                        sh '''
+                        bat """
+                            set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID%
+                            set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY%
                             terraform init
-                            terraform apply -auto-approve \
-                              -var="aws_region=$AWS_REGION" \
-                              -var="your_ip=$YOUR_IP_CIDR"
-                        '''
+                            terraform apply -auto-approve ^
+                              -var="aws_region=%AWS_REGION%" ^
+                              -var="your_ip=%YOUR_IP_CIDR%"
+                        """
                         script {
-                            env.DEPLOY_HOST = sh(script: 'terraform output -raw ec2_public_ip', returnStdout: true).trim()
+                            env.DEPLOY_HOST = bat(
+                                script: 'terraform output -raw ec2_public_ip',
+                                returnStdout: true
+                            ).trim()
                         }
                     }
                 }
@@ -91,15 +101,15 @@ pipeline {
                     string(credentialsId: 'EC2_USER', variable: 'EC2_USER'),
                     sshUserPrivateKey(credentialsId: 'EC2_SSH_KEY', keyFileVariable: 'EC2_KEY')
                 ]) {
-                    sh '''
-                        ssh -i "$EC2_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$DEPLOY_HOST" "
-                          docker pull '$FULL_IMAGE' &&
-                          (docker stop '$CONTAINER_NAME' || true) &&
-                          (docker rm '$CONTAINER_NAME' || true) &&
-                          docker run -d --restart unless-stopped --name '$CONTAINER_NAME' -p 80:80 '$FULL_IMAGE' &&
-                          docker ps --filter name='$CONTAINER_NAME'
-                        "
-                    '''
+                    bat """
+                        ssh -i "%EC2_KEY%" -o StrictHostKeyChecking=no %EC2_USER%@%DEPLOY_HOST% ^
+                          "docker pull %FULL_IMAGE% && ^
+                           (docker stop %CONTAINER_NAME% || true) && ^
+                           (docker rm   %CONTAINER_NAME% || true) && ^
+                           docker run -d --restart unless-stopped ^
+                             --name %CONTAINER_NAME% -p 80:80 %FULL_IMAGE% && ^
+                           docker ps --filter name=%CONTAINER_NAME%"
+                    """
                 }
             }
         }

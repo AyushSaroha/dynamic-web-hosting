@@ -1,18 +1,34 @@
 terraform {
   required_version = ">= 1.6.0"
-
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
   }
 }
 
 provider "aws" {
-  region = var.aws_region
+  region = "us-east-2"
 }
 
+# Automatically generate a private key
+resource "tls_private_key" "dynamic_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Create the key pair in AWS using the generated public key
+resource "aws_key_pair" "dynamic_site_key" {
+  key_name   = "dynamic-site-key"
+  public_key = tls_private_key.dynamic_key.public_key_openssh
+}
+
+# Ubuntu AMI data
 data "aws_ami" "ubuntu" {
   most_recent = true
   owners      = ["099720109477"]
@@ -28,12 +44,13 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-resource "aws_security_group" "dynamic_site" {
-  name        = "${var.project_name}-sg"
+# Security Group
+resource "aws_security_group" "dynamic_site_sg" {
+  name_prefix = "${var.project_name}-sg-"
   description = "Security group for dynamic web hosting project"
 
   ingress {
-    description = "SSH from your IP"
+    description = "SSH"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -41,7 +58,7 @@ resource "aws_security_group" "dynamic_site" {
   }
 
   ingress {
-    description = "Website"
+    description = "HTTP"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -49,7 +66,7 @@ resource "aws_security_group" "dynamic_site" {
   }
 
   ingress {
-    description = "Grafana from your IP"
+    description = "Grafana"
     from_port   = 3000
     to_port     = 3000
     protocol    = "tcp"
@@ -57,7 +74,7 @@ resource "aws_security_group" "dynamic_site" {
   }
 
   ingress {
-    description = "Prometheus from your IP"
+    description = "Prometheus"
     from_port   = 9090
     to_port     = 9090
     protocol    = "tcp"
@@ -65,7 +82,6 @@ resource "aws_security_group" "dynamic_site" {
   }
 
   egress {
-    description = "Allow outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -78,12 +94,19 @@ resource "aws_security_group" "dynamic_site" {
   }
 }
 
+# EC2 Instance
 resource "aws_instance" "dynamic_site" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.instance_type
-  key_name               = var.key_name
-  vpc_security_group_ids = [aws_security_group.dynamic_site.id]
-  user_data              = file("${path.module}/user_data.sh")
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = var.instance_type
+  
+  # Pointing to our new managed key resource
+  key_name      = aws_key_pair.dynamic_site_key.key_name
+
+  vpc_security_group_ids = [
+    aws_security_group.dynamic_site_sg.id
+  ]
+
+  user_data = file("${path.module}/user_data.sh")
 
   root_block_device {
     volume_size = 20
@@ -96,7 +119,8 @@ resource "aws_instance" "dynamic_site" {
   }
 }
 
-resource "aws_eip" "dynamic_site" {
+# Elastic IP
+resource "aws_eip" "dynamic_site_eip" {
   instance = aws_instance.dynamic_site.id
   domain   = "vpc"
 

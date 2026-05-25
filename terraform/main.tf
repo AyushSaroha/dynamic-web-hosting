@@ -6,42 +6,18 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
-    tls = {
-      source  = "hashicorp/tls"
-      version = "~> 4.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.0"
-    }
   }
 }
 
 provider "aws" {
-  region = "us-east-2"
+  region = var.aws_region
 }
 
 # -------------------------
-# Random ID (optional use)
+# Existing EC2 Key Pair
 # -------------------------
-resource "random_id" "key" {
-  byte_length = 4
-}
-
-# -------------------------
-# Generate Private Key
-# -------------------------
-resource "tls_private_key" "dynamic_key" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-# -------------------------
-# AWS Key Pair (FIXED)
-# -------------------------
-resource "aws_key_pair" "dynamic_site_key" {
-  key_name   = "dynamic-site-key"
-  public_key = tls_private_key.dynamic_key.public_key_openssh
+data "aws_key_pair" "dynamic_site_key" {
+  key_name = var.key_name
 }
 
 # -------------------------
@@ -121,8 +97,7 @@ resource "aws_instance" "dynamic_site" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.instance_type
 
-  # FIX: correct key reference
-  key_name = aws_key_pair.dynamic_site_key.key_name
+  key_name = data.aws_key_pair.dynamic_site_key.key_name
 
   vpc_security_group_ids = [
     aws_security_group.dynamic_site_sg.id

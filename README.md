@@ -51,9 +51,7 @@ Create these Jenkins credentials:
 | Credential ID | Type | Value |
 | --- | --- | --- |
 | `DOCKERHUB_CREDENTIALS` | Username with password | Docker Hub username and access token |
-| `EC2_HOST` | Secret text | EC2 Elastic IP |
-| `EC2_USER` | Secret text | `ubuntu` |
-| `EC2_SSH_KEY` | SSH username with private key | Private key from `dynamic-site-key.pem` |
+| `EC2_KEY` | Secret file | Private key file for the existing AWS key pair named `dynamic-site-key` |
 | `AWS_ACCESS_KEY_ID` | Secret text | AWS access key |
 | `AWS_SECRET_ACCESS_KEY` | Secret text | AWS secret key |
 

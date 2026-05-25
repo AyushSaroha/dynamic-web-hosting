@@ -137,7 +137,7 @@ pipeline {
                         script {
 
                             env.DEPLOY_HOST = bat(
-                                script: 'terraform output -raw ec2_public_ip',
+                                script: '@terraform output -raw ec2_public_ip',
                                 returnStdout: true
                             ).trim().replaceAll("[\\r\\n]", "")
 
@@ -157,7 +157,7 @@ pipeline {
                     dir('terraform') {
 
                         env.EC2_IP = bat(
-                            script: 'terraform output -raw ec2_public_ip',
+                            script: '@terraform output -raw ec2_public_ip',
                             returnStdout: true
                         ).trim().replaceAll("[\\r\\n]", "")
                     }
@@ -173,14 +173,30 @@ pipeline {
 
                     ]) {
 
+                        timeout(time: 6, unit: 'MINUTES') {
+                            waitUntil {
+                                def readyStatus = bat(
+                                    script: """@ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@${env.EC2_IP} "cloud-init status --wait && sudo systemctl is-active --quiet docker" """,
+                                    returnStatus: true
+                                )
+
+                                if (readyStatus != 0) {
+                                    sleep time: 10, unit: 'SECONDS'
+                                    return false
+                                }
+
+                                return true
+                            }
+                        }
+
                         bat """
-                        ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@16.59.228.129 ^
-                        "sudo docker stop dynamic-site-container || true && ^
-                        sudo docker rm dynamic-site-container || true && ^
-                        sudo docker pull ayushsaroha8791/dynamic-site:latest && ^
+                        ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@3.151.17.170 ^
+                        "sudo docker stop %CONTAINER_NAME% || true && ^
+                        sudo docker rm %CONTAINER_NAME% || true && ^
+                        sudo docker pull %LATEST_IMAGE% && ^
                         sudo docker run -d --restart unless-stopped ^
-                        --name dynamic-site-container -p 80:80 ^
-                        ayushsaroha8791/dynamic-site:latest && ^
+                        --name %CONTAINER_NAME% -p 80:80 ^
+                        %LATEST_IMAGE% && ^
                         sudo docker ps"
                         """
                     }
@@ -203,7 +219,14 @@ pipeline {
 
         always {
 
-            cleanWs()
+            cleanWs(
+                deleteDirs: false,
+                notFailBuild: true,
+                patterns: [
+                    [pattern: 'terraform/terraform.tfstate', type: 'EXCLUDE'],
+                    [pattern: 'terraform/terraform.tfstate.backup', type: 'EXCLUDE']
+                ]
+            )
         }
     }
 }

@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS region where resources will be created"
   type        = string
-  default     = "ap-east-2"
+  default     = "us-east-2"
 }
 
 variable "project_name" {

@@ -33,7 +33,7 @@ pipeline {
 
         booleanParam(
             name: 'APPLY_TERRAFORM',
-            defaultValue: true,
+            defaultValue: false,
             description: 'Run Terraform Apply'
         )
     }
@@ -203,7 +203,7 @@ pipeline {
                         }
 
                         bat """
-                        ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@18.190.184.38 ^
+                        ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@${env.EC2_IP} ^
                         "sudo docker stop %CONTAINER_NAME% || true && ^
                         sudo docker rm %CONTAINER_NAME% || true && ^
                         sudo docker pull %LATEST_IMAGE% && ^

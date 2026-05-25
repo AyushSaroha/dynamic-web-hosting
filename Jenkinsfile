@@ -171,38 +171,30 @@ pipeline {
             }
         }
 
-        stage('Deploy Website to EC2') {
+stage('Deploy Website to EC2') {
+    steps {
+        withCredentials([
+            sshUserPrivateKey(
+                credentialsId: 'EC2_SSH_KEY',
+                keyFileVariable: 'EC2_KEY',
+                usernameVariable: 'EC2_USER'
+            )
+        ]) {
 
-            steps {
-
-                withCredentials([
-
-                    string(
-                        credentialsId: 'EC2_USER',
-                        variable: 'EC2_USER'
-                    ),
-
-                    sshUserPrivateKey(
-                        credentialsId: 'EC2_SSH_KEY',
-                        keyFileVariable: 'EC2_KEY'
-                    )
-
-                ]) {
-
-                    bat """
-                    ssh -i "%EC2_KEY%" -o StrictHostKeyChecking=no %EC2_USER%@%DEPLOY_HOST% ^
-                    "docker stop %CONTAINER_NAME% || true && ^
-                     docker rm %CONTAINER_NAME% || true && ^
-                     docker rmi %LATEST_IMAGE% || true && ^
-                     docker pull %LATEST_IMAGE% && ^
-                     docker run -d --restart unless-stopped ^
-                     --name %CONTAINER_NAME% -p 80:80 %LATEST_IMAGE% && ^
-                     docker ps"
-                    """
-                }
-            }
+            bat """
+            ssh -i "%EC2_KEY%" -o StrictHostKeyChecking=no ubuntu@16.59.228.129 ^
+            "sudo docker stop dynamic-site-container 2>/dev/null ; ^
+            sudo docker rm dynamic-site-container 2>/dev/null ; ^
+            sudo docker rmi ayushsaroha8791/dynamic-site:latest 2>/dev/null ; ^
+            sudo docker pull ayushsaroha8791/dynamic-site:latest && ^
+            sudo docker run -d --restart unless-stopped ^
+            --name dynamic-site-container -p 80:80 ^
+            ayushsaroha8791/dynamic-site:latest && ^
+            sudo docker ps"
+            """
         }
     }
+}
 
     post {
 

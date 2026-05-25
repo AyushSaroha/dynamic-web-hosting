@@ -41,7 +41,34 @@ pipeline {
 
     stages {
 
+        stage('Resolve Deploy Host') {
+
+            steps {
+
+                withCredentials([
+
+                    string(
+                        credentialsId: 'EC2_HOST',
+                        variable: 'EC2_HOST_CRED'
+                    )
+
+                ]) {
+
+                    script {
+
+                        if (!env.DEPLOY_HOST?.trim()) {
+
+                            env.DEPLOY_HOST = env.EC2_HOST_CRED
+
+                            echo "Using EC2 Host: ${env.DEPLOY_HOST}"
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Checkout') {
+
             steps {
                 checkout scm
             }
@@ -52,6 +79,7 @@ pipeline {
             steps {
 
                 script {
+
                     env.FULL_IMAGE   = "${params.DOCKER_IMAGE}:${env.IMAGE_TAG}"
                     env.LATEST_IMAGE = "${params.DOCKER_IMAGE}:latest"
                 }
@@ -89,9 +117,13 @@ pipeline {
         stage('Terraform Apply') {
 
             when {
+
                 anyOf {
+
                     expression { return params.APPLY_TERRAFORM }
+
                     changeset 'terraform/**'
+
                     changeset 'monitoring/**'
                 }
             }
@@ -159,8 +191,9 @@ pipeline {
 
                     bat """
                     ssh -i "%EC2_KEY%" -o StrictHostKeyChecking=no %EC2_USER%@%DEPLOY_HOST% ^
-                    "docker stop %CONTAINER_NAME% || exit 0 && ^
-                     docker rm %CONTAINER_NAME% || exit 0 && ^
+                    "docker stop %CONTAINER_NAME% || true && ^
+                     docker rm %CONTAINER_NAME% || true && ^
+                     docker rmi %LATEST_IMAGE% || true && ^
                      docker pull %LATEST_IMAGE% && ^
                      docker run -d --restart unless-stopped ^
                      --name %CONTAINER_NAME% -p 80:80 %LATEST_IMAGE% && ^
@@ -174,14 +207,17 @@ pipeline {
     post {
 
         success {
+
             echo 'Build, Push, Terraform, and Deployment completed successfully.'
         }
 
         failure {
+
             echo 'Pipeline failed. Check Jenkins logs.'
         }
 
         always {
+
             cleanWs()
         }
     }

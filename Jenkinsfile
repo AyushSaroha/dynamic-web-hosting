@@ -126,24 +126,19 @@ pipeline {
             }
         }
 
-        stage('Deploy Website to EC2') {
-
-            steps {
-
-                script {
-                    if (!env.DEPLOY_HOST?.trim()) {
-
-                        withCredentials([
-                            string(
-                                credentialsId: 'EC2_HOST',
-                                variable: 'CREDENTIAL_EC2_HOST'
-                            )
-                        ]) {
-
-                            env.DEPLOY_HOST = env.CREDENTIAL_EC2_HOST
-                        }
-                    }
-                }
+stage('Deploy Website to EC2') {
+    steps {
+        sshagent(['EC2_SSH_KEY']) {
+            bat """
+            ssh -o StrictHostKeyChecking=no ubuntu@%DEPLOY_HOST% ^
+            "docker stop dynamic-site-container || true && ^
+             docker rm dynamic-site-container || true && ^
+             docker pull ayushsaroha8791/dynamic-site:latest && ^
+             docker run -d --name dynamic-site-container -p 80:80 ayushsaroha8791/dynamic-site:latest"
+            """
+        }
+    }
+} 
 
                 withCredentials([
 

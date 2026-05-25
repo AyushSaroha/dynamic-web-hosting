@@ -203,7 +203,7 @@ pipeline {
                         }
 
                         bat """
-                        ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@${env.EC2_IP} ^
+                        ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@18.190.184.38 ^
                         "sudo docker stop %CONTAINER_NAME% || true && ^
                         sudo docker rm %CONTAINER_NAME% || true && ^
                         sudo docker pull %LATEST_IMAGE% && ^

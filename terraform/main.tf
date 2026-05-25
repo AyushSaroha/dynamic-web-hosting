@@ -1,5 +1,6 @@
 terraform {
   required_version = ">= 1.6.0"
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -9,6 +10,10 @@ terraform {
       source  = "hashicorp/tls"
       version = "~> 4.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -16,19 +21,32 @@ provider "aws" {
   region = "us-east-2"
 }
 
-# Automatically generate a private key
+# -------------------------
+# Random ID (optional use)
+# -------------------------
+resource "random_id" "key" {
+  byte_length = 4
+}
+
+# -------------------------
+# Generate Private Key
+# -------------------------
 resource "tls_private_key" "dynamic_key" {
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
-# Create the key pair in AWS using the generated public key
+# -------------------------
+# AWS Key Pair (FIXED)
+# -------------------------
 resource "aws_key_pair" "dynamic_site_key" {
   key_name   = "dynamic-site-key"
   public_key = tls_private_key.dynamic_key.public_key_openssh
 }
 
-# Ubuntu AMI data
+# -------------------------
+# Ubuntu AMI
+# -------------------------
 data "aws_ami" "ubuntu" {
   most_recent = true
   owners      = ["099720109477"]
@@ -44,7 +62,9 @@ data "aws_ami" "ubuntu" {
   }
 }
 
+# -------------------------
 # Security Group
+# -------------------------
 resource "aws_security_group" "dynamic_site_sg" {
   name_prefix = "${var.project_name}-sg-"
   description = "Security group for dynamic web hosting project"
@@ -94,13 +114,15 @@ resource "aws_security_group" "dynamic_site_sg" {
   }
 }
 
-# EC2 Instance
+# -------------------------
+# EC2 Instance (FIXED)
+# -------------------------
 resource "aws_instance" "dynamic_site" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.instance_type
-  
-  # Pointing to our new managed key resource
-  key_name      = aws_key_pair.dynamic_site_key.key_name
+
+  # FIX: correct key reference
+  key_name = aws_key_pair.dynamic_site_key.key_name
 
   vpc_security_group_ids = [
     aws_security_group.dynamic_site_sg.id
@@ -119,7 +141,9 @@ resource "aws_instance" "dynamic_site" {
   }
 }
 
-# Elastic IP
+# -------------------------
+# Elastic IP (FIXED)
+# -------------------------
 resource "aws_eip" "dynamic_site_eip" {
   instance = aws_instance.dynamic_site.id
   domain   = "vpc"

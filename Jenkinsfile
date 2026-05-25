@@ -28,7 +28,7 @@ pipeline {
 
         booleanParam(
             name: 'APPLY_TERRAFORM',
-            defaultValue: false,
+            defaultValue: true,
             description: 'Run Terraform Apply'
         )
     }
@@ -171,30 +171,35 @@ pipeline {
             }
         }
 
-stage('Deploy Website to EC2') {
-    steps {
-        withCredentials([
-            sshUserPrivateKey(
-                credentialsId: 'EC2_SSH_KEY',
-                keyFileVariable: 'EC2_KEY',
-                usernameVariable: 'EC2_USER'
-            )
-        ]) {
+        stage('Deploy Website to EC2') {
 
-            bat """
-            ssh -i "%EC2_KEY%" -o StrictHostKeyChecking=no ubuntu@16.59.228.129 ^
-            "sudo docker stop dynamic-site-container 2>/dev/null ; ^
-            sudo docker rm dynamic-site-container 2>/dev/null ; ^
-            sudo docker rmi ayushsaroha8791/dynamic-site:latest 2>/dev/null ; ^
-            sudo docker pull ayushsaroha8791/dynamic-site:latest && ^
-            sudo docker run -d --restart unless-stopped ^
-            --name dynamic-site-container -p 80:80 ^
-            ayushsaroha8791/dynamic-site:latest && ^
-            sudo docker ps"
-            """
+            steps {
+
+                withCredentials([
+
+                    sshUserPrivateKey(
+                        credentialsId: 'EC2_SSH_KEY',
+                        keyFileVariable: 'EC2_KEY',
+                        usernameVariable: 'EC2_USER'
+                    )
+
+                ]) {
+
+                    bat """
+                    ssh -i "%EC2_KEY%" -o StrictHostKeyChecking=no ubuntu@16.59.228.129 ^
+                    "sudo docker stop dynamic-site-container 2>/dev/null ; ^
+                    sudo docker rm dynamic-site-container 2>/dev/null ; ^
+                    sudo docker rmi ayushsaroha8791/dynamic-site:latest 2>/dev/null ; ^
+                    sudo docker pull ayushsaroha8791/dynamic-site:latest && ^
+                    sudo docker run -d --restart unless-stopped ^
+                    --name dynamic-site-container -p 80:80 ^
+                    ayushsaroha8791/dynamic-site:latest && ^
+                    sudo docker ps"
+                    """
+                }
+            }
         }
     }
-}
 
     post {
 

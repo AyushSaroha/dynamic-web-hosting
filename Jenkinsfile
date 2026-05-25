@@ -21,7 +21,7 @@ pipeline {
 
         string(
             name: 'YOUR_IP_CIDR',
-            defaultValue: '0.0.0.0/0',
+            defaultValue: '117.251.86.153/32',
             description: 'Your public IP in CIDR'
         )
 

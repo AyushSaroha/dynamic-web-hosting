@@ -33,7 +33,7 @@ pipeline {
 
         booleanParam(
             name: 'APPLY_TERRAFORM',
-            defaultValue: false,
+            defaultValue: true,
             description: 'Run Terraform Apply'
         )
     }

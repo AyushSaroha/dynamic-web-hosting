@@ -1,4 +1,5 @@
 pipeline {
+
     agent any
 
     options {
@@ -34,6 +35,7 @@ pipeline {
     }
 
     environment {
+
         CONTAINER_NAME = 'dynamic-site-container'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
         TF_IN_AUTOMATION = 'true'
@@ -44,6 +46,7 @@ pipeline {
         stage('Checkout') {
 
             steps {
+
                 checkout scm
             }
         }
@@ -53,7 +56,8 @@ pipeline {
             steps {
 
                 script {
-                    env.FULL_IMAGE   = "${params.DOCKER_IMAGE}:${env.IMAGE_TAG}"
+
+                    env.FULL_IMAGE = "${params.DOCKER_IMAGE}:${env.IMAGE_TAG}"
                     env.LATEST_IMAGE = "${params.DOCKER_IMAGE}:latest"
                 }
 
@@ -145,35 +149,45 @@ pipeline {
         }
 
         stage('Deploy Website to EC2') {
-    steps {
-        script {
-            dir('terraform') {
-                env.EC2_IP = bat(
-                    script: 'terraform output -raw ec2_public_ip',
-                    returnStdout: true
-                ).trim()
-            }
 
-            echo "Deploying to ${EC2_IP}"
+            steps {
 
-            withCredentials([
-                file(credentialsId: 'EC2_KEY', variable: 'KEY_FILE')
-            ]) {
+                script {
 
-                bat """
-                ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@%EC2_IP% ^
-                "sudo docker stop dynamic-site-container || true && ^
-                sudo docker rm dynamic-site-container || true && ^
-                sudo docker pull ayushsaroha8791/dynamic-site:latest && ^
-                sudo docker run -d --restart unless-stopped ^
-                --name dynamic-site-container -p 80:80 ^
-                ayushsaroha8791/dynamic-site:latest && ^
-                sudo docker ps"
-                """
+                    dir('terraform') {
+
+                        env.EC2_IP = bat(
+                            script: 'terraform output -raw ec2_public_ip',
+                            returnStdout: true
+                        ).trim().replaceAll("[\\r\\n]", "")
+                    }
+
+                    echo "Deploying to ${env.EC2_IP}"
+
+                    withCredentials([
+
+                        file(
+                            credentialsId: 'EC2_KEY',
+                            variable: 'KEY_FILE'
+                        )
+
+                    ]) {
+
+                        bat """
+                        ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@%EC2_IP% ^
+                        "sudo docker stop dynamic-site-container || true && ^
+                        sudo docker rm dynamic-site-container || true && ^
+                        sudo docker pull ayushsaroha8791/dynamic-site:latest && ^
+                        sudo docker run -d --restart unless-stopped ^
+                        --name dynamic-site-container -p 80:80 ^
+                        ayushsaroha8791/dynamic-site:latest && ^
+                        sudo docker ps"
+                        """
+                    }
+                }
             }
         }
     }
-
 
     post {
 
@@ -192,5 +206,4 @@ pipeline {
             cleanWs()
         }
     }
-}
 }

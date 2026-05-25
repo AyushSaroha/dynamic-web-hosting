@@ -17,9 +17,21 @@ variable "instance_type" {
 }
 
 variable "key_name" {
-  description = "Existing AWS EC2 key pair name"
+  description = "AWS EC2 key pair name to create and attach to the instance"
   type        = string
   default     = "dynamic-site-key"
+}
+
+variable "public_key_path" {
+  description = "Local SSH public key path used to create the AWS EC2 key pair"
+  type        = string
+  default     = "~/.ssh/id_rsa.pub"
+}
+
+variable "docker_image" {
+  description = "Docker image to auto-start on the EC2 instance"
+  type        = string
+  default     = "ayushsaroha8791/dynamic-site:latest"
 }
 
 variable "your_ip" {

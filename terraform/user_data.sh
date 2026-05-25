@@ -9,7 +9,7 @@ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/
 chmod a+r /etc/apt/keyrings/docker.gpg
 
 . /etc/os-release
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable" > /etc/apt/sources.list.d/docker.list
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $${VERSION_CODENAME} stable" > /etc/apt/sources.list.d/docker.list
 
 apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -17,6 +17,14 @@ apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin do
 usermod -aG docker ubuntu
 systemctl enable docker
 systemctl start docker
+
+docker pull "${docker_image}"
+docker stop dynamic-site-container || true
+docker rm dynamic-site-container || true
+docker run -d --restart unless-stopped \
+  --name dynamic-site-container \
+  -p 80:80 \
+  "${docker_image}"
 
 mkdir -p /opt/monitoring
 cat >/opt/monitoring/prometheus.yml <<'PROMETHEUS_CONFIG'

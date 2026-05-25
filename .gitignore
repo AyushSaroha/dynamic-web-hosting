@@ -4,3 +4,4 @@ prometheus-*
 *.tfstate.*
 *.tfvars
 *.pem
+terraform/dynamic-site-key.pub

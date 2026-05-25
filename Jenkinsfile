@@ -121,6 +121,11 @@ pipeline {
                     string(
                         credentialsId: 'AWS_SECRET_ACCESS_KEY',
                         variable: 'AWS_SECRET_ACCESS_KEY'
+                    ),
+
+                    file(
+                        credentialsId: 'EC2_KEY',
+                        variable: 'KEY_FILE'
                     )
 
                 ]) {
@@ -131,11 +136,15 @@ pipeline {
                         set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID%
                         set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY%
 
+                        ssh-keygen -y -f "%KEY_FILE%" > dynamic-site-key.pub
+
                         terraform init
 
                         terraform apply -auto-approve ^
                           -var="aws_region=%AWS_REGION%" ^
-                          -var="your_ip=%YOUR_IP_CIDR%"
+                          -var="your_ip=%YOUR_IP_CIDR%" ^
+                          -var="docker_image=%LATEST_IMAGE%" ^
+                          -var="public_key_path=%CD%\\dynamic-site-key.pub"
                         """
 
                         script {

@@ -49,12 +49,16 @@ git push -u origin main
 
 ## Terraform to EC2 Container Flow
 
-Create an AWS EC2 key pair named `dynamic-site-key`, then run:
+Terraform creates the AWS EC2 key pair from an SSH public key. For local runs, make sure `~/.ssh/id_rsa.pub` exists, or pass `public_key_path` with the path to your public key. Jenkins derives this public key automatically from the `EC2_KEY` private-key credential before running Terraform.
 
 ```bash
 cd terraform
 terraform init
-terraform apply -var="your_ip=YOUR_PUBLIC_IP/32"
+terraform validate
+terraform apply -auto-approve \
+  -var="your_ip=YOUR_PUBLIC_IP/32" \
+  -var="public_key_path=PATH_TO_PUBLIC_KEY.pub" \
+  -var="docker_image=YOUR_DOCKERHUB_USER/dynamic-site:latest"
 ```
 
 Terraform outputs:
@@ -63,7 +67,20 @@ Terraform outputs:
 - `grafana_url`
 - `prometheus_url`
 
-Terraform creates the EC2 server, security group, and Elastic IP. The EC2 `user_data.sh` installs Docker and starts the monitoring containers. Jenkins then uses `terraform output -raw ec2_public_ip`, connects with SSH, pulls the latest Docker image, removes the old website container, and starts the new one on port `80`.
+Terraform creates the key pair, EC2 server, security group, and Elastic IP. The EC2 `user_data.sh` installs Docker, starts the website container on port `80`, and starts the monitoring containers. Jenkins then uses `terraform output -raw ec2_public_ip`, connects with SSH, pulls the latest Docker image, removes the old website container, and starts the new one on port `80`.
+
+## Terraform Structure
+
+```text
+terraform/
+  main.tf          Provider and Terraform requirements
+  variables.tf     Inputs for region, key, IP, instance type, and Docker image
+  key.tf           AWS key pair creation
+  security.tf      SSH, HTTP, Grafana, and Prometheus security group
+  ec2.tf           EC2 instance, Elastic IP, and app bootstrap
+  outputs.tf       Website, Grafana, Prometheus, and EC2 IP outputs
+  user_data.sh     Docker, app container, Prometheus, and Grafana startup
+```
 
 ## Jenkins Credentials
 
@@ -72,7 +89,7 @@ Create these Jenkins credentials:
 | Credential ID | Type | Value |
 | --- | --- | --- |
 | `DOCKERHUB_CREDENTIALS` | Username with password | Docker Hub username and access token |
-| `EC2_KEY` | Secret file | Private key file for the existing AWS key pair named `dynamic-site-key` |
+| `EC2_KEY` | Secret file | Private key matching the public key passed to Terraform |
 | `AWS_ACCESS_KEY_ID` | Secret text | AWS access key |
 | `AWS_SECRET_ACCESS_KEY` | Secret text | AWS secret key |
 

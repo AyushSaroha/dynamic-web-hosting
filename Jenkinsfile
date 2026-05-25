@@ -41,32 +41,6 @@ pipeline {
 
     stages {
 
-        stage('Resolve Deploy Host') {
-
-            steps {
-
-                withCredentials([
-
-                    string(
-                        credentialsId: 'EC2_HOST',
-                        variable: 'EC2_HOST_CRED'
-                    )
-
-                ]) {
-
-                    script {
-
-                        if (!env.DEPLOY_HOST?.trim()) {
-
-                            env.DEPLOY_HOST = env.EC2_HOST_CRED
-
-                            echo "Using EC2 Host: ${env.DEPLOY_HOST}"
-                        }
-                    }
-                }
-            }
-        }
-
         stage('Checkout') {
 
             steps {
@@ -79,7 +53,6 @@ pipeline {
             steps {
 
                 script {
-
                     env.FULL_IMAGE   = "${params.DOCKER_IMAGE}:${env.IMAGE_TAG}"
                     env.LATEST_IMAGE = "${params.DOCKER_IMAGE}:latest"
                 }
@@ -172,34 +145,35 @@ pipeline {
         }
 
         stage('Deploy Website to EC2') {
+    steps {
+        script {
+            dir('terraform') {
+                env.EC2_IP = bat(
+                    script: 'terraform output -raw ec2_public_ip',
+                    returnStdout: true
+                ).trim()
+            }
 
-            steps {
+            echo "Deploying to ${EC2_IP}"
 
-                withCredentials([
+            withCredentials([
+                file(credentialsId: 'EC2_KEY', variable: 'KEY_FILE')
+            ]) {
 
-                    sshUserPrivateKey(
-                        credentialsId: 'EC2_SSH_KEY',
-                        keyFileVariable: 'EC2_KEY',
-                        usernameVariable: 'EC2_USER'
-                    )
-
-                ]) {
-
-                    bat """
-                    ssh -i "%EC2_KEY%" -o StrictHostKeyChecking=no ubuntu@16.59.228.129 ^
-                    "sudo docker stop dynamic-site-container 2>/dev/null ; ^
-                    sudo docker rm dynamic-site-container 2>/dev/null ; ^
-                    sudo docker rmi ayushsaroha8791/dynamic-site:latest 2>/dev/null ; ^
-                    sudo docker pull ayushsaroha8791/dynamic-site:latest && ^
-                    sudo docker run -d --restart unless-stopped ^
-                    --name dynamic-site-container -p 80:80 ^
-                    ayushsaroha8791/dynamic-site:latest && ^
-                    sudo docker ps"
-                    """
-                }
+                bat """
+                ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@%EC2_IP% ^
+                "sudo docker stop dynamic-site-container || true && ^
+                sudo docker rm dynamic-site-container || true && ^
+                sudo docker pull ayushsaroha8791/dynamic-site:latest && ^
+                sudo docker run -d --restart unless-stopped ^
+                --name dynamic-site-container -p 80:80 ^
+                ayushsaroha8791/dynamic-site:latest && ^
+                sudo docker ps"
+                """
             }
         }
     }
+}
 
     post {
 

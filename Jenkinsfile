@@ -180,12 +180,22 @@ pipeline {
                             usernameVariable: 'SSH_USER'
                         )
                     ]) {
+                        env.SAFE_KEY_FILE = "${env.WORKSPACE}\\ec2-key-${env.BUILD_NUMBER}.pem"
+
+                        bat """
+                        copy /Y "%KEY_FILE%" "%SAFE_KEY_FILE%" >NUL
+                        icacls "%SAFE_KEY_FILE%" /inheritance:r
+                        icacls "%SAFE_KEY_FILE%" /grant:r "%USERNAME%:R"
+                        icacls "%SAFE_KEY_FILE%" /remove:g "BUILTIN\\Users" 2>NUL || ver >NUL
+                        icacls "%SAFE_KEY_FILE%" /remove:g "NT AUTHORITY\\Authenticated Users" 2>NUL || ver >NUL
+                        icacls "%SAFE_KEY_FILE%" /remove:g "Everyone" 2>NUL || ver >NUL
+                        """
 
                         // Wait until EC2 instance is fully ready
                         timeout(time: 6, unit: 'MINUTES') {
                             waitUntil {
                                 def readyStatus = bat(
-                                    script: """@ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@${env.EC2_IP} "cloud-init status --wait && sudo systemctl is-active --quiet docker" """,
+                                    script: """@ssh -i "%SAFE_KEY_FILE%" -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@${env.EC2_IP} "cloud-init status --wait && sudo systemctl is-active --quiet docker" """,
                                     returnStatus: true
                                 )
                                 if (readyStatus != 0) {
@@ -198,7 +208,7 @@ pipeline {
 
                         // ✅ FIX 3: use ${env.EC2_IP} — NOT the hardcoded IP
                         bat """
-                        ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@${env.EC2_IP} ^
+                        ssh -i "%SAFE_KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@${env.EC2_IP} ^
                         "sudo docker stop %CONTAINER_NAME% || true && ^
                         sudo docker rm   %CONTAINER_NAME% || true && ^
                         sudo docker pull %LATEST_IMAGE%          && ^

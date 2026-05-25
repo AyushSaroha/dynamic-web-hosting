@@ -174,7 +174,7 @@ pipeline {
                     ]) {
 
                         bat """
-                        ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@%EC2_IP% ^
+                        ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@16.59.228.129 ^
                         "sudo docker stop dynamic-site-container || true && ^
                         sudo docker rm dynamic-site-container || true && ^
                         sudo docker pull ayushsaroha8791/dynamic-site:latest && ^

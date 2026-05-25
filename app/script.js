@@ -54,9 +54,11 @@ deployButton.addEventListener("click", () => {
   const steps = [
     "$ git pull origin main",
     "$ docker build -t dynamic-web-hosting .",
-    "$ jenkins deploy --env production",
-    "$ aws sync app/ s3://hosting-bucket",
-    "Deployment completed with zero downtime."
+    "$ docker push ayushsaroha8791/dynamic-site:latest",
+    "$ terraform apply -auto-approve",
+    "$ ssh ubuntu@ec2-public-ip docker pull dynamic-site:latest",
+    "$ docker run -d --restart unless-stopped -p 80:80 dynamic-site",
+    "EC2 container deployment completed successfully."
   ];
 
   deployButton.disabled = true;

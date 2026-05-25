@@ -7,6 +7,10 @@ pipeline {
         disableConcurrentBuilds()
     }
 
+    triggers {
+        githubPush()
+    }
+
     parameters {
 
         string(
@@ -190,7 +194,7 @@ pipeline {
                         }
 
                         bat """
-                        ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@16.59.175.223 ^
+                        ssh -i "%KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@%EC2_IP% ^
                         "sudo docker stop %CONTAINER_NAME% || true && ^
                         sudo docker rm %CONTAINER_NAME% || true && ^
                         sudo docker pull %LATEST_IMAGE% && ^

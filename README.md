@@ -28,7 +28,26 @@ docker run -d --name dynamic-site -p 8081:80 dynamic-site
 
 Open `http://localhost:8081`.
 
-## Terraform Deploy
+## Upload to a New GitHub Repo
+
+Create an empty GitHub repository, then connect this local folder to it:
+
+```bash
+git remote add origin https://github.com/YOUR_USER/YOUR_REPO.git
+git branch -M main
+git add .
+git commit -m "updated devops dynamic website"
+git push -u origin main
+```
+
+If `origin` already exists, update it instead:
+
+```bash
+git remote set-url origin https://github.com/YOUR_USER/YOUR_REPO.git
+git push -u origin main
+```
+
+## Terraform to EC2 Container Flow
 
 Create an AWS EC2 key pair named `dynamic-site-key`, then run:
 
@@ -43,6 +62,8 @@ Terraform outputs:
 - `website_url`
 - `grafana_url`
 - `prometheus_url`
+
+Terraform creates the EC2 server, security group, and Elastic IP. The EC2 `user_data.sh` installs Docker and starts the monitoring containers. Jenkins then uses `terraform output -raw ec2_public_ip`, connects with SSH, pulls the latest Docker image, removes the old website container, and starts the new one on port `80`.
 
 ## Jenkins Credentials
 
@@ -64,6 +85,32 @@ Set the pipeline parameters:
 - `APPLY_TERRAFORM`: enable for the first run or when you want to force infrastructure deployment
 
 The pipeline builds the Docker image, pushes it to Docker Hub, applies Terraform when needed, then deploys the website container to EC2.
+
+## Auto Trigger from GitHub
+
+1. Install the Jenkins GitHub plugin if it is not already installed.
+2. Create a Jenkins Pipeline job pointing to this GitHub repo.
+3. In GitHub, open `Settings > Webhooks > Add webhook`.
+4. Payload URL: `http://YOUR_JENKINS_URL/github-webhook/`
+5. Content type: `application/json`
+6. Events: choose `Just the push event`.
+7. Save the webhook.
+
+The `Jenkinsfile` includes `githubPush()`, so every push to GitHub can automatically run the build, push the Docker image, apply Terraform when needed, and refresh the EC2 container.
+
+## Manual EC2 Container Refresh
+
+Use this only when you want to deploy without Jenkins:
+
+```bash
+cd terraform
+EC2_IP=$(terraform output -raw ec2_public_ip)
+ssh -i /path/to/dynamic-site-key.pem ubuntu@$EC2_IP
+sudo docker pull YOUR_DOCKERHUB_USER/dynamic-site:latest
+sudo docker stop dynamic-site-container || true
+sudo docker rm dynamic-site-container || true
+sudo docker run -d --restart unless-stopped --name dynamic-site-container -p 80:80 YOUR_DOCKERHUB_USER/dynamic-site:latest
+```
 
 ## Grafana
 

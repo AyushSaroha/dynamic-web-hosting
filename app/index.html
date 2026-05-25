@@ -31,7 +31,7 @@
     <section class="hero">
       <div class="hero-copy">
         <p class="eyebrow">AWS DevOps Deployment</p>
-        <h1>Hynamic Web Hosting That Feels Fast, Stable, and Production Ready.</h1>
+        <h1>Dynamic Web Hosting That Feels Fast, Stable, and Production Ready.</h1>
         <p class="hero-text">
           A responsive interactive project page for your cloud hosting workflow,
           deployment pipeline, and live infrastructure story.
@@ -55,8 +55,9 @@
         </div>
         <div class="terminal-output" id="terminalOutput">
           <p>$ docker build -t dynamic-web-hosting .</p>
-          <p>$ jenkins deploy --env production</p>
-          <p>$ aws sync app/ s3://hosting-bucket</p>
+          <p>$ docker push ayushsaroha8791/dynamic-site:latest</p>
+          <p>$ terraform apply -auto-approve</p>
+          <p>$ ssh ubuntu@ec2-public-ip docker run -d -p 80:80 dynamic-site</p>
           <p class="success">Deployment completed with zero downtime.</p>
         </div>
       </div>
@@ -87,12 +88,12 @@
       </div>
 
       <div class="stack-grid">
-        <button class="stack-card active" type="button" data-stack="AWS S3 stores and serves the static site assets.">
+        <button class="stack-card active" type="button" data-stack="Terraform creates the EC2 server, security group, Elastic IP, and Docker-ready bootstrap.">
           <span>01</span>
-          <strong>AWS Hosting</strong>
-          <p>Static app delivery with cloud-first deployment.</p>
+          <strong>AWS EC2</strong>
+          <p>Cloud server hosting with Terraform-managed infrastructure.</p>
         </button>
-        <button class="stack-card" type="button" data-stack="Jenkins automates build, test, and deployment steps.">
+        <button class="stack-card" type="button" data-stack="Jenkins listens for GitHub pushes, builds the image, pushes Docker Hub, and deploys to EC2.">
           <span>02</span>
           <strong>Jenkins CI/CD</strong>
           <p>Repeatable pipeline steps for reliable releases.</p>
@@ -104,7 +105,7 @@
         </button>
       </div>
 
-      <p class="stack-note" id="stackNote">AWS S3 stores and serves the static site assets.</p>
+      <p class="stack-note" id="stackNote">Terraform creates the EC2 server, security group, Elastic IP, and Docker-ready bootstrap.</p>
     </section>
 
     <section class="pipeline" id="pipeline">

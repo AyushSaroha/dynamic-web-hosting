@@ -1,5 +1,9 @@
 resource "aws_key_pair" "dynamic_key" {
-  key_name = "dynamic-site-key"
+  key_name   = "dynamic-site-key"
+  public_key = file("${path.module}/keys/dynamic-site-key.pub")
 
-  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC18aQ5GNUtwcfvIHv8IfQo1Mmv2bHwV0zpeKo9+cxNog+MPwoLg74iVVoxu7PgccS87vGVKjFmh1ZPCYOEoK43HUilhXKd/tcQB0Jf7Eu/8FfL89Ovec2QDqWbcPxSt3kAtKOvMb9rt+MofY2LK4V8xdchhf/JLrBxC4qoiGF8sv2ODxCuSaLUicPBC7hO6vLGurwpjqRs1BWwSRibvVMNZq7kElWavHbTTGjUG1h9mkx3PdWqsmANlfwT22H5ef+vKMlM/PGIxrbkNDblpfKufAWCY4Hk7k4JtiZxpfDmHvjrWa7s8pno6++A3DZLpL3AeWWrhBNxxvQADRojZvbSxe6h6hdd7nV942bqaBZZxY5dtLmHHn0kvZ1gxe6UyX+oK7Vze0A7roaFG4g67ataRgUGBX67IX6P8s0LR/qZApa3hYGodrKB9zzHefNUZWTEpC3X2oUY/PEZfL32WYutUZB0vJEtvwmOZRBX9Piko+tSwkx/Na0PdaGARWpzEOybH7G9rIf9zd73qr45cdcbUw0EossJU4s5CN/JPlS47GPczhmncJx5XEhUju5OD1BVWsbmC67Of5qm6QPSPQyBrxsaY2/DHdoQsGcPhUj7wc3waQww9oSHiNflb+t56OLBvUkUh7qC8+GHYqBkqox75DIAcvMgf8JR5o0trq1vGw== ayush@AYUSHSAROHA"
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = all
+  }
 }

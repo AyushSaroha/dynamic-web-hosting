@@ -1,0 +1,37 @@
+name: CI/CD Live Deployment
+
+on:
+  push:
+    branches:
+      - main  # Triggers the workflow whenever you push to the main branch
+
+jobs:
+  deploy:
+    runs-on: self-hosted  # Tells GitHub to execute this job on your EC2 runner
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: |
+          # Build the image using the codebase pulled by the runner
+          docker build -t dynamic-site:latest .
+
+      - name: Stop and Remove Existing Container
+        run: |
+          # The || true prevents the pipeline from failing if the container doesn't exist yet
+          docker stop dynamic-site-container || true
+          docker rm dynamic-site-container || true
+          docker stop my-website-container || true
+          docker rm my-website-container || true
+
+      - name: Run New Container
+        run: |
+          # Spin up the container mapping port 80 for web traffic
+          docker run -d --name dynamic-site-container -p 80:80 --restart always dynamic-site:latest
+
+      - name: Cleanup Old Images
+        run: |
+          # Clean up dangling images to save disk space on EC2
+          docker image prune -f

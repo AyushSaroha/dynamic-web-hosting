@@ -224,10 +224,10 @@ pipeline {
                             }
                         }
 
+                        def remoteDeployCommand = "sudo docker stop ${env.CONTAINER_NAME} || true && sudo docker rm ${env.CONTAINER_NAME} || true && sudo docker pull ${env.LATEST_IMAGE} && sudo docker run -d --restart unless-stopped --name ${env.CONTAINER_NAME} -p 80:80 ${env.LATEST_IMAGE} && sudo docker ps"
+
                         // ✅ FIX 3: use ${env.EC2_IP} — NOT the hardcoded IP
-                        bat """
-                        ssh -i "%SAFE_KEY_FILE%" -o StrictHostKeyChecking=no ubuntu@${env.EC2_IP} "sudo docker stop %CONTAINER_NAME% || true && sudo docker rm %CONTAINER_NAME% || true && sudo docker pull %LATEST_IMAGE% && sudo docker run -d --restart unless-stopped --name %CONTAINER_NAME% -p 80:80 %LATEST_IMAGE% && sudo docker ps"
-                        """
+                        bat(script: """@ssh -i "${env.SAFE_KEY_FILE}" -o StrictHostKeyChecking=no ubuntu@${env.EC2_IP} "${remoteDeployCommand}" """)
                     }
                 }
             }

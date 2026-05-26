@@ -45,6 +45,17 @@ scrape_configs:
       - targets: ['nginx-exporter:9113']
 PROMETHEUS_CONFIG
 
+mkdir -p /opt/monitoring/provisioning/datasources
+cat >/opt/monitoring/provisioning/datasources/datasource.yml <<'GRAFANA_DATASOURCE'
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+GRAFANA_DATASOURCE
+
 cat >/opt/monitoring/docker-compose.yml <<'COMPOSE'
 services:
   prometheus:
@@ -69,6 +80,7 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./provisioning:/etc/grafana/provisioning:ro
     ports:
       - "3000:3000"
     depends_on:

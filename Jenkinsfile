@@ -113,45 +113,51 @@ pipeline {
                     )
                 ]) {
                     dir('terraform') {
-                        bat """
-                        set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID%
-                        set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY%
+                        try {
+                            bat """
+                            set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID%
+                            set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY%
 
-                        if not exist keys mkdir keys
-                        for /f "delims=" %%U in ('whoami') do set "SSH_KEY_OWNER=%%U"
-                        icacls "%KEY_FILE%" /inheritance:r
-                        icacls "%KEY_FILE%" /grant:r "%SSH_KEY_OWNER%:R"
-                        icacls "%KEY_FILE%" /remove:g "BUILTIN\\Users" 2>NUL || ver >NUL
-                        icacls "%KEY_FILE%" /remove:g "NT AUTHORITY\\Authenticated Users" 2>NUL || ver >NUL
-                        icacls "%KEY_FILE%" /remove:g "Everyone" 2>NUL || ver >NUL
-                        ssh-keygen -y -f "%KEY_FILE%" > keys\\dynamic-site-key.pub
+                            if not exist keys mkdir keys
+                            for /f "delims=" %%U in ('whoami') do set "SSH_KEY_OWNER=%%U"
+                            icacls "%KEY_FILE%" /inheritance:r
+                            icacls "%KEY_FILE%" /grant:r "%SSH_KEY_OWNER%:R"
+                            icacls "%KEY_FILE%" /remove:g "BUILTIN\\Users" 2>NUL || ver >NUL
+                            icacls "%KEY_FILE%" /remove:g "NT AUTHORITY\\Authenticated Users" 2>NUL || ver >NUL
+                            icacls "%KEY_FILE%" /remove:g "Everyone" 2>NUL || ver >NUL
+                            ssh-keygen -y -f "%KEY_FILE%" > keys\\dynamic-site-key.pub
 
-                        set "TF_SSH_CIDR=%YOUR_IP_CIDR%"
-                        if "%TF_SSH_CIDR%"=="" (
-                          for /f "usebackq delims=" %%I in (`curl -s https://checkip.amazonaws.com`) do set "TF_SSH_CIDR=%%I/32"
-                        )
-                        echo Allowing SSH from %TF_SSH_CIDR%
+                            set "TF_SSH_CIDR=%YOUR_IP_CIDR%"
+                            if "%TF_SSH_CIDR%"=="" (
+                              for /f "usebackq delims=" %%I in (`curl -s https://checkip.amazonaws.com`) do set "TF_SSH_CIDR=%%I/32"
+                            )
+                            echo Allowing SSH from %TF_SSH_CIDR%
 
-                        terraform init
+                            copy /Y "c:\\Users\\ayush\\Desktop\\dynamic-web-hosting\\terraform\\terraform.tfstate" "terraform.tfstate" || ver >NUL
 
-                        terraform apply -auto-approve ^
-                          -var="aws_region=%AWS_REGION%" ^
-                          -var="your_ip=%TF_SSH_CIDR%" ^
-                          -var="docker_image=%LATEST_IMAGE%" ^
-                          -var="public_key_path=%CD%\\keys\\dynamic-site-key.pub"
+                            terraform init
 
-                        if errorlevel 1 (
-                          echo Terraform apply failed. Removing stale Elastic IP state and retrying once.
-                          terraform state rm aws_eip_association.eip_assoc 2>NUL || ver >NUL
-                          terraform state rm aws_eip.dynamic_site_eip 2>NUL || ver >NUL
+                            terraform apply -auto-approve ^
+                              -var="aws_region=%AWS_REGION%" ^
+                              -var="your_ip=%TF_SSH_CIDR%" ^
+                              -var="docker_image=%LATEST_IMAGE%" ^
+                              -var="public_key_path=%CD%\\keys\\dynamic-site-key.pub"
 
-                          terraform apply -auto-approve ^
-                            -var="aws_region=%AWS_REGION%" ^
-                            -var="your_ip=%TF_SSH_CIDR%" ^
-                            -var="docker_image=%LATEST_IMAGE%" ^
-                            -var="public_key_path=%CD%\\keys\\dynamic-site-key.pub"
-                        )
-                        """
+                            if errorlevel 1 (
+                              echo Terraform apply failed. Removing stale Elastic IP state and retrying once.
+                              terraform state rm aws_eip_association.eip_assoc 2>NUL || ver >NUL
+                              terraform state rm aws_eip.dynamic_site_eip 2>NUL || ver >NUL
+
+                              terraform apply -auto-approve ^
+                                -var="aws_region=%AWS_REGION%" ^
+                                -var="your_ip=%TF_SSH_CIDR%" ^
+                                -var="docker_image=%LATEST_IMAGE%" ^
+                                -var="public_key_path=%CD%\\keys\\dynamic-site-key.pub"
+                            )
+                            """
+                        } finally {
+                            bat 'copy /Y "terraform.tfstate" "c:\\Users\\ayush\\Desktop\\dynamic-web-hosting\\terraform\\terraform.tfstate" || ver >NUL'
+                        }
 
                         script {
                             env.EC2_IP = bat(

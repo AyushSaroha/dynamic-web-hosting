@@ -1,6 +1,6 @@
 resource "aws_key_pair" "dynamic_key" {
-  key_name   = "dynamic-site-key"
-  public_key = file("${path.module}/keys/dynamic-site-key.pub")
+  key_name   = var.key_name
+  public_key = file(var.public_key_path)
 
   lifecycle {
     prevent_destroy = true

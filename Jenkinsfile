@@ -118,6 +118,12 @@ pipeline {
                         set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY%
 
                         if not exist keys mkdir keys
+                        for /f "delims=" %%U in ('whoami') do set "SSH_KEY_OWNER=%%U"
+                        icacls "%KEY_FILE%" /inheritance:r
+                        icacls "%KEY_FILE%" /grant:r "%SSH_KEY_OWNER%:R"
+                        icacls "%KEY_FILE%" /remove:g "BUILTIN\\Users" 2>NUL || ver >NUL
+                        icacls "%KEY_FILE%" /remove:g "NT AUTHORITY\\Authenticated Users" 2>NUL || ver >NUL
+                        icacls "%KEY_FILE%" /remove:g "Everyone" 2>NUL || ver >NUL
                         ssh-keygen -y -f "%KEY_FILE%" > keys\\dynamic-site-key.pub
 
                         set "TF_SSH_CIDR=%YOUR_IP_CIDR%"
@@ -132,7 +138,7 @@ pipeline {
                           -var="aws_region=%AWS_REGION%" ^
                           -var="your_ip=%TF_SSH_CIDR%" ^
                           -var="docker_image=%LATEST_IMAGE%" ^
-                          -var="public_key_path=%CD%\\dynamic-site-key.pub"
+                          -var="public_key_path=%CD%\\keys\\dynamic-site-key.pub"
                         """
 
                         script {
@@ -184,8 +190,9 @@ pipeline {
 
                         bat """
                         copy /Y "%KEY_FILE%" "%SAFE_KEY_FILE%" >NUL
+                        for /f "delims=" %%U in ('whoami') do set "SSH_KEY_OWNER=%%U"
                         icacls "%SAFE_KEY_FILE%" /inheritance:r
-                        icacls "%SAFE_KEY_FILE%" /grant:r "%USERNAME%:R"
+                        icacls "%SAFE_KEY_FILE%" /grant:r "%SSH_KEY_OWNER%:R"
                         icacls "%SAFE_KEY_FILE%" /remove:g "BUILTIN\\Users" 2>NUL || ver >NUL
                         icacls "%SAFE_KEY_FILE%" /remove:g "NT AUTHORITY\\Authenticated Users" 2>NUL || ver >NUL
                         icacls "%SAFE_KEY_FILE%" /remove:g "Everyone" 2>NUL || ver >NUL
@@ -199,7 +206,6 @@ pipeline {
                                     returnStatus: true
                                 )
                                 if (readyStatus != 0) {
-                                    sleep time: 10, unit: 'SECONDS'
                                     return false
                                 }
                                 return true

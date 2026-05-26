@@ -139,6 +139,18 @@ pipeline {
                           -var="your_ip=%TF_SSH_CIDR%" ^
                           -var="docker_image=%LATEST_IMAGE%" ^
                           -var="public_key_path=%CD%\\keys\\dynamic-site-key.pub"
+
+                        if errorlevel 1 (
+                          echo Terraform apply failed. Removing stale Elastic IP state and retrying once.
+                          terraform state rm aws_eip_association.eip_assoc 2>NUL || ver >NUL
+                          terraform state rm aws_eip.dynamic_site_eip 2>NUL || ver >NUL
+
+                          terraform apply -auto-approve ^
+                            -var="aws_region=%AWS_REGION%" ^
+                            -var="your_ip=%TF_SSH_CIDR%" ^
+                            -var="docker_image=%LATEST_IMAGE%" ^
+                            -var="public_key_path=%CD%\\keys\\dynamic-site-key.pub"
+                        )
                         """
 
                         script {

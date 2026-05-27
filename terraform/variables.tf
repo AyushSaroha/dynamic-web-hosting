@@ -19,7 +19,7 @@ variable "instance_type" {
 variable "key_name" {
   description = "AWS EC2 key pair name to create and attach to the instance"
   type        = string
-  default     = "dynamic-site-key"
+  default     = "dynamic-site-key-v2"
 }
 
 variable "public_key_path" {

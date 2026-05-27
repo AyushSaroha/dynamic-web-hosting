@@ -43,6 +43,10 @@ scrape_configs:
   - job_name: nginx
     static_configs:
       - targets: ['nginx-exporter:9113']
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ['cadvisor:8080']
 PROMETHEUS_CONFIG
 
 mkdir -p /opt/monitoring/provisioning/datasources
@@ -106,6 +110,21 @@ services:
       - host.docker.internal:host-gateway
     ports:
       - "9113:9113"
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    restart: unless-stopped
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    ports:
+      - "8080:8080"
 
 volumes:
   prometheus-data:
